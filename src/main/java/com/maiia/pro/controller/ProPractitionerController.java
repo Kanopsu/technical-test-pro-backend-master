@@ -1,6 +1,7 @@
 package com.maiia.pro.controller;
 
-import com.maiia.pro.entity.Practitioner;
+import com.maiia.pro.dto.PractitionerDto;
+import com.maiia.pro.mapper.PractitionerMapper;
 import com.maiia.pro.service.ProPractitionerService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +20,12 @@ public class ProPractitionerController {
     @Autowired
     private ProPractitionerService proPractitionerService;
 
+    @Autowired
+    private PractitionerMapper practitionerMapper;
+
     @ApiOperation(value = "Get practitioners")
     @GetMapping
-    public List<Practitioner> getPractitioners() {
-        return proPractitionerService.findAll();
+    public List<PractitionerDto> getPractitioners() {
+        return practitionerMapper.toDtos(proPractitionerService.findAll());
     }
 }
