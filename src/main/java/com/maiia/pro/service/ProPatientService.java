@@ -11,7 +11,6 @@ import java.util.List;
 public class ProPatientService {
     @Autowired
     private PatientRepository patientRepository;
-
     public Patient find(String patientId) {
         return patientRepository.findById(patientId).orElseThrow();
     }

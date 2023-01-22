@@ -1,6 +1,7 @@
 package com.maiia.pro.controller;
 
-import com.maiia.pro.entity.Availability;
+import com.maiia.pro.dto.AvailabilityDto;
+import com.maiia.pro.mapper.AvailabilityMapper;
 import com.maiia.pro.service.ProAvailabilityService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +17,13 @@ public class ProAvailabilityController {
     @Autowired
     private ProAvailabilityService proAvailabilityService;
 
+    @Autowired
+    private AvailabilityMapper availabilityMapper;
+
     @ApiOperation(value = "Get availabilities by practitionerId")
     @GetMapping
-    public List<Availability> getAvailabilities(@RequestParam final Integer practitionerId) {
-        return proAvailabilityService.findByPractitionerId(practitionerId);
+    public List<AvailabilityDto> getAvailabilities(@RequestParam final Integer practitionerId) {
+
+        return availabilityMapper.toDtos(proAvailabilityService.findByPractitionerId(practitionerId));
     }
 }

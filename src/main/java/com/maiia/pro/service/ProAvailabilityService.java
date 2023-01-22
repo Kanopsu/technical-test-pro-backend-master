@@ -8,6 +8,7 @@ import com.maiia.pro.repository.AvailabilityRepository;
 import com.maiia.pro.repository.TimeSlotRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -42,24 +43,40 @@ public class ProAvailabilityService {
                 LocalDateTime endCheckDate = startDate.plusMinutes(SLOT);
                 Appointment appointment = appointmentRepository.findOneByPractitionerIdAndStartDateBetween(practitionerId, startDate, endCheckDate);
                 if (Objects.isNull(appointment)) {
-                    availabilities.add(Availability.builder().practitionerId(practitionerId).startDate(startDate).build());
+                    availabilities.add(processAvailability(startDate, practitionerId));
                     startDate = startDate.plusMinutes(SLOT);
                 } else {
                     if (appointment.getEndDate().equals(startDate)) {
-                        startDate = processAvailability(availabilities, startDate, practitionerId);
+                        availabilities.add(processAvailability(startDate, practitionerId));
+                        startDate = startDate.plusMinutes(SLOT);
                     } else if (appointment.getStartDate().equals(endCheckDate)) {
-                        startDate = processAvailability(availabilities, startDate, practitionerId);
+                        availabilities.add(processAvailability(startDate, practitionerId));
+                        startDate = startDate.plusMinutes(SLOT);
                     } else {
                         startDate = appointment.getEndDate();
                     }
                 }
             }
+            avoidDuplicatedAvailabilities(availabilities, timeSlot.getPractitionerId(),
+                    timeSlot.getStartDate(), timeSlot.getEndDate());
         }
+        availabilityRepository.saveAll(availabilities);
         return availabilities;
     }
 
-    public LocalDateTime processAvailability(List<Availability> availabilities, LocalDateTime startDate, Integer practitionerId) {
-        availabilities.add(Availability.builder().practitionerId(practitionerId).startDate(startDate).endDate(startDate.plusMinutes(SLOT)).build());
-        return startDate.plusMinutes(SLOT);
+    private void avoidDuplicatedAvailabilities(List<Availability> availabilities, Integer practitionerId,
+                                               LocalDateTime startDate, LocalDateTime endDate) {
+        List<Availability> currentAvailabilities = availabilityRepository.findByPractitionerIdAndStartDateBetween(
+                practitionerId, startDate, endDate
+        );
+        if(!CollectionUtils.isEmpty(currentAvailabilities)) {
+            availabilities.removeIf(a -> currentAvailabilities.stream().anyMatch(a2 -> !a2.getEndDate()
+                    .isBefore(a.getStartDate()) && !a2.getStartDate().isAfter(a.getEndDate()) || a2.getStartDate().equals(a.getEndDate())));
+        }
+    }
+
+    private Availability processAvailability(LocalDateTime startDate, Integer practitionerId) {
+        LocalDateTime endDate = startDate.plusMinutes(SLOT);
+        return Availability.builder().practitionerId(practitionerId).startDate(startDate).endDate(endDate).build();
     }
 }
